@@ -1,7 +1,9 @@
+require("dotenv").config()
 const express = require("express")
 const morgan = require("morgan")
 const cors = require("cors")
 const app = express()
+const Person = require("./models/person")
 
 app.use(cors())
 
@@ -38,24 +40,29 @@ let puhelinnumerot = [
 ]
 
 app.get("/api/persons", (request, response) =>  {
-    response.json(puhelinnumerot)
+    Person.find({}).then(persons => {
+        response.json(persons)
+    })
 })
 
 app.get("/info", (request, response) => {
-    const length = puhelinnumerot.length
-    response.send(`
+    Person.countDocuments({})
+    .then(length => {
+      response.send(`
         <p>Phonebook has info for ${length} people</p>
-        <p>${new Date()}</p>`)
+        <p>${new Date()}</p>
+      `)
+    })
+    .catch(error => {
+      console.error(err)
+      response.status(500).send("Error fetching info")
+    })
 })
 
 app.get("/api/persons/:id", (request, response) => {
-    const id = request.params.id
-    const numero = puhelinnumerot.find(numero => numero.id === id)
-    if (numero) {
-        response.json(numero)
-    } else {
-        response.status(404).end()
-    }
+    Person.findById(request.params.id).then(person => {
+        response.json(person)
+    })
 }) 
 
 app.delete("/api/persons/:id", (request, response) => {
@@ -68,26 +75,20 @@ app.delete("/api/persons/:id", (request, response) => {
 app.post("/api/persons", (request, response) => {
     const body = request.body
 
-    const userCheck = puhelinnumerot.find(numero => numero.name === body.name)
-
     if (!body.name || !body.number) {
         return response.status(404).json({
             error: "name or number missing"
         })
-    } else if (userCheck) {
-        return response.status(400).json({
-            error: "name must be unique"
-        })
     }
 
-    const puhelinnumero = {
-        id: `${Math.floor(Math.random() * 1000000)}`,
+    const puhelinnumero = new Person({
         name: body.name,
         number: body.number
-    }
+    })
 
-    puhelinnumerot = puhelinnumerot.concat(puhelinnumero)
-    response.json(puhelinnumero)
+    puhelinnumero.save().then(savedNumber => {
+        response.json(savedNumber)
+    })
 })
 
 const PORT = process.env.PORT || 3001
