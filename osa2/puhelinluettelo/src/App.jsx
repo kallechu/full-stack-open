@@ -92,7 +92,7 @@ const App = () => {
 
         .catch(error => {
             setErrorMessage(
-              error.respone.data.error
+              error.response.data.error
             )
             setTimeout(() => {
               setErrorMessage(null)
