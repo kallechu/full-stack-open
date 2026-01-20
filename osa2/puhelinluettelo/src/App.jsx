@@ -92,7 +92,7 @@ const App = () => {
 
         .catch(error => {
             setErrorMessage(
-              `Failed to add ${newName}`
+              error.respone.data.error
             )
             setTimeout(() => {
               setErrorMessage(null)
