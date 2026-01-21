@@ -8,7 +8,8 @@
     "dev": "node --watch index.js",
     "start": "node index.js",
     "build:ui": "rm -rf dist && cd ../../osa1/harjoittelu/react && npm run build && cp -r dist ../../osa3/harjoitus",
-    "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push"
+    "deploy:full": "npm run build:ui && git add . && git commit -m uibuild && git push",
+    "lint": "eslint ."
   },
   "author": "",
   "license": "ISC",
@@ -16,5 +17,11 @@
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "mongoose": "^8.18.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@stylistic/eslint-plugin": "^5.7.0",
+    "eslint": "^9.39.2",
+    "globals": "^17.0.0"
   }
 }
