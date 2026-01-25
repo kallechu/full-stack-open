@@ -1,4 +1,4 @@
-const { test, after, beforeEach } = require('node:test')
+const { test, after, beforeEach, describe } = require('node:test')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
@@ -6,6 +6,8 @@ const Blog = require('../models/blog')
 const api = supertest(app)
 const helper = require('./test_helper')
 const assert = require('node:assert')
+const User = require('../models/user')
+const bcrypt = require('bcrypt')
 
 beforeEach(async () => {
   await Blog.deleteMany({})
@@ -138,6 +140,83 @@ test('update of blog', async () => {
     
     assert.strictEqual(updatedBlog.likes, content.likes)
 })
+
+describe('creation of account', () => {
+    beforeEach(async () => {
+    await User.deleteMany({})
+
+    const passwordHash = await bcrypt.hash('sekret123', 10)
+    const user = new User({ username: 'testUser', name: 'test mies', passwordHash })
+
+    await user.save()
+  })
+
+  test('creation of account fails if username or password not given', async () => {
+
+    const usersAtStart = await helper.usersInDb()
+
+    const newUser = {
+        username: "",
+        name: "testi mies",
+        password: "salainen"
+    }
+
+    const newUser2 = {
+        username: "testman",
+        name: "testi mies",
+        password: ""
+    }
+
+    await api
+        .post('/api/users')
+        .send(newUser)
+        .expect(400)
+        .expect('Content-Type', /application\/json/)
+
+    await api
+        .post('/api/users')
+        .send(newUser2)
+        .expect(400)
+        .expect('Content-Type', /application\/json/)
+
+    const usersAtEnd = await helper.usersInDb()
+
+    assert.strictEqual(usersAtStart.length, usersAtEnd.length)
+    })
+
+    test('creation of account fails if username or password shorter than 3 characters', async () => {
+
+    const usersAtStart = await helper.usersInDb()
+    
+        const newUser = {
+        username: "sa",
+        name: "testi mies",
+        password: "salainen"
+    }
+
+    const newUser2 = {
+        username: "testman",
+        name: "testi mies",
+        password: "mi"
+    }
+
+    await api
+        .post('/api/users')
+        .send(newUser)
+        .expect(400)
+        .expect('Content-Type', /application\/json/)
+
+    await api
+        .post('/api/users')
+        .send(newUser2)
+        .expect(400)
+        .expect('Content-Type', /application\/json/)
+
+    const usersAtEnd = await helper.usersInDb()
+    assert.strictEqual(usersAtStart.length, usersAtEnd.length)
+    })
+})
+
 
 after(async () => {
   await mongoose.connection.close()

@@ -76,6 +76,17 @@ describe('when there is initially some notes saved', () => {
         .expect(201)
         .expect('Content-Type', /application\/json/)
 
+      const loginResponse = await api
+        .post('/api/login')
+        .send({
+          username: newUser.username,
+          password: newUser.password
+        })
+        .expect(200)
+        .expect('Content-Type', /application\/json/)
+
+      const token = loginResponse.body.token
+
       const newNote = {
         content: 'async/await simplifies making async calls',
         important: true,
@@ -84,6 +95,7 @@ describe('when there is initially some notes saved', () => {
 
       await api
         .post('/api/notes')
+        .set('Authorization', `Bearer ${token}`)
         .send(newNote)
         .expect(201)
         .expect('Content-Type', /application\/json/)
@@ -96,9 +108,33 @@ describe('when there is initially some notes saved', () => {
     })
 
     test('fails with status code 400 if data invalid', async () => {
+      const newUser = {
+        username: 'mluukkai123',
+        name: 'Matti Luukkainen',
+        password: 'salainen'
+      }
+
+      const response = await api
+        .post('/api/users')
+        .send(newUser)
+        .expect(201)
+        .expect('Content-Type', /application\/json/)
+
+      const loginResponse = await api
+        .post('/api/login')
+        .send({
+          username: newUser.username,
+          password: newUser.password
+        })
+        .expect(200)
+        .expect('Content-Type', /application\/json/)
+
+      const token = loginResponse.body.token
+      console.log('Token:', token)
+
       const newNote = { important: true }
 
-      await api.post('/api/notes').send(newNote).expect(400)
+      await api.post('/api/notes').set('Authorization', `Bearer ${token}`).send(newNote).expect(400)
 
       const notesAtEnd = await helper.notesInDb()
 
