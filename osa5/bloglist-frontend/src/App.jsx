@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Blog from "./components/Blog";
 import blogService from "./services/blogs";
 import loginService from "./services/login";
 import LoginForm from "./components/LoginForm";
 import Notification from "./components/Notification";
 import BlogForm from "./components/BlogForm";
+import Togglable from "./components/Togglable";
 
 const App = () => {
   const [blogs, setBlogs] = useState([]);
@@ -16,6 +17,8 @@ const App = () => {
   const [url, setUrl] = useState("");
   const [successMessage, setSuccessMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
+
+  const blogFormRef = useRef();
 
   useEffect(() => {
     blogService.getAll().then((blogs) => setBlogs(blogs));
@@ -38,18 +41,6 @@ const App = () => {
     setPassword(event.target.value);
   };
 
-  const handleTitleChange = (event) => {
-    setTitle(event.target.value);
-  };
-
-  const handleAuthorChange = (event) => {
-    setAuthor(event.target.value);
-  };
-
-  const handleUrlChange = (event) => {
-    setUrl(event.target.value);
-  };
-
   const handleLogin = async (event) => {
     event.preventDefault();
     try {
@@ -68,10 +59,10 @@ const App = () => {
     }
   };
 
-  const handleNewBlog = async (event) => {
-    event.preventDefault();
+  const handleNewBlog = async (blogObject) => {
     try {
-      const blog = await blogService.createBlog({ title, author, url });
+      blogFormRef.current.toggleVisibility();
+      const blog = await blogService.createBlog(blogObject);
 
       setBlogs(blogs.concat(blog));
 
@@ -79,10 +70,21 @@ const App = () => {
       setTimeout(() => {
         setSuccessMessage(null);
       }, 5000);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-      setTitle("");
-      setAuthor("");
-      setUrl("");
+  const handleLikeBlog = async (blogObject) => {
+    try {
+      setBlogs(
+        blogs.map((blog) => (blog.id === blogObject.id ? blogObject : blog)),
+      );
+      await blogService.likeBlog(blogObject);
+      setSuccessMessage(`you liked ${blogObject.title} blog`);
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
     } catch (error) {
       console.error(error);
     }
@@ -117,17 +119,11 @@ const App = () => {
             {user.name} logged in <button onClick={handleLogOut}>logout</button>
           </p>
           <h2>create new</h2>
-          <BlogForm
-            handleNewBlog={handleNewBlog}
-            title={title}
-            handleTitleChange={handleTitleChange}
-            author={author}
-            handleAuthorChange={handleAuthorChange}
-            url={url}
-            handleUrlChange={handleUrlChange}
-          />
+          <Togglable buttonLabel="create new blog" ref={blogFormRef}>
+            <BlogForm createBlog={handleNewBlog} />
+          </Togglable>
           {blogs.map((blog) => (
-            <Blog key={blog.id} blog={blog} />
+            <Blog key={blog.id} blog={blog} likeBlog={handleLikeBlog} />
           ))}
         </div>
       )}
